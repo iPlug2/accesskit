@@ -18,7 +18,10 @@ default-target = "aarch64-apple-ios"
 accesskit = { version = "0.25.2", path = "../../accesskit" }
 accesskit_consumer = { version = "0.39.2", path = "../../accesskit_consumer" }
 hashbrown.workspace = true
-objc2 = "0.5.1"
+# Objective-C class names are global to the process. The fork of objc2 that
+# the workspace patches in can add a random suffix to them, so that several
+# copies of AccessKit can be loaded into one process, e.g. by plug-ins.
+objc2 = { version = "0.5.2", features = ["unique-class-names"] }
 objc2-foundation = { version = "0.2.0", features = [
     "NSArray",
     "NSAttributedString",

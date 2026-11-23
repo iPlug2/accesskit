@@ -33,3 +33,8 @@ hashbrown = { version = "0.17", default-features = false, features = ["default-h
 lto = true
 opt-level = "z"
 codegen-units = 1
+
+# objc2 0.5.2 with the `unique-class-names` feature, which the macOS and iOS
+# adapters use. Crates that depend on those adapters need this patch too.
+[patch.crates-io]
+objc2 = { git = "https://github.com/iPlug2/objc2", branch = "unique-class-names-0.5.2" }

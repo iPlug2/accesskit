@@ -112,7 +112,7 @@ fn new_recording_view() -> Retained<UIView> {
 fn the_view_is_subclassed() {
     let view = new_view();
     let (_adapter, _) = adapter_for(&view);
-    assert_eq!(class_name(&view), "AccessKitSubclassOfUIView");
+    assert_class_name(&view, "AccessKitSubclassOfUIView");
 }
 
 fn querying_the_view_requests_the_tree() {
@@ -142,7 +142,7 @@ fn a_view_can_get_a_new_adapter() {
     let view = new_view();
     drop(adapter_for(&view));
     let (adapter, events) = adapter_for(&view);
-    assert_eq!(class_name(&view), "AccessKitSubclassOfUIView");
+    assert_class_name(&view, "AccessKitSubclassOfUIView");
     query_accessibility(&view);
     assert!(events.tree_requested.get());
     drop(adapter);
@@ -153,21 +153,15 @@ fn observers_can_be_removed_after_dropping() {
     let view = new_view();
     let (adapter, events) = adapter_for(&view);
     let observation = observe(&view);
-    assert_eq!(
-        class_name(&view),
-        "NSKVONotifying_AccessKitSubclassOfUIView"
-    );
+    assert_class_name(&view, "NSKVONotifying_AccessKitSubclassOfUIView");
 
     drop(adapter);
     assert!(events.dropped.get());
-    assert_eq!(
-        class_name(&view),
-        "NSKVONotifying_AccessKitSubclassOfUIView"
-    );
+    assert_class_name(&view, "NSKVONotifying_AccessKitSubclassOfUIView");
     query_accessibility_without_adapter(&view);
 
     stop_observing(&view, observation);
-    assert_eq!(class_name(&view), "AccessKitSubclassOfUIView");
+    assert_class_name(&view, "AccessKitSubclassOfUIView");
     query_accessibility_without_adapter(&view);
 }
 
@@ -176,9 +170,9 @@ fn a_view_left_subclassed_behaves_like_its_original_class() {
     let (adapter, _) = adapter_for(&view);
     let observation = observe(&view);
     drop(adapter);
-    assert_eq!(
-        class_name(&view),
-        "NSKVONotifying_AccessKitSubclassOfAccessKitTestRecordingView"
+    assert_class_name(
+        &view,
+        "NSKVONotifying_AccessKitSubclassOfAccessKitTestRecordingView",
     );
 
     let is_element: Bool = unsafe { msg_send![&view, isAccessibilityElement] };
@@ -199,10 +193,7 @@ fn an_observed_view_can_get_a_new_adapter() {
     drop(adapter);
 
     let (adapter, events) = adapter_for(&view);
-    assert_eq!(
-        class_name(&view),
-        "NSKVONotifying_AccessKitSubclassOfUIView"
-    );
+    assert_class_name(&view, "NSKVONotifying_AccessKitSubclassOfUIView");
     query_accessibility(&view);
     assert!(events.tree_requested.get());
     drop(adapter);
@@ -210,7 +201,7 @@ fn an_observed_view_can_get_a_new_adapter() {
 
     stop_observing(&view, observation);
     let (adapter, events) = adapter_for(&view);
-    assert_eq!(class_name(&view), "AccessKitSubclassOfUIView");
+    assert_class_name(&view, "AccessKitSubclassOfUIView");
     query_accessibility(&view);
     assert!(events.tree_requested.get());
     drop(adapter);
@@ -227,4 +218,17 @@ fn a_view_observed_before_the_adapter_is_rejected() {
     stop_observing(&view, observation);
     assert_eq!(class_name(&view), "UIView");
     query_accessibility_without_adapter(&view);
+}
+
+/// The class that the adapter creates has a random suffix, see `subclass_of`
+#[track_caller]
+fn assert_class_name(view: &UIView, expected_prefix: &str) {
+    let name = class_name(view);
+    let suffix = name
+        .strip_prefix(expected_prefix)
+        .and_then(|s| s.strip_prefix('_'));
+    assert!(
+        suffix.is_some_and(|s| s.len() == 16 && s.chars().all(|c| c.is_ascii_hexdigit())),
+        "unexpected class name {name}"
+    );
 }

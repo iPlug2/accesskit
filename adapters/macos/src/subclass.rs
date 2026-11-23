@@ -158,7 +158,9 @@ fn subclass_of(prev_class: &'static AnyClass) -> &'static AnyClass {
         Some(entry) => entry.1,
         None => {
             let name = format!("AccessKitSubclassOf{}", prev_class.name());
-            let mut builder = ClassBuilder::new(&name, prev_class).unwrap();
+            // Another copy of AccessKit in this process may already have
+            // subclassed the same class, so the name needs to be unique.
+            let mut builder = ClassBuilder::new_unique(&name, prev_class).unwrap();
             unsafe {
                 builder.add_method(
                     sel!(superclass),
